@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityTrack — Nashik Smart Transport</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ========================= LOGIN PAGE ========================= -->
+<div id="loginPage" class="login-wrapper">
+    <div class="login-card">
+        <div class="login-brand">
+            <i class="fas fa-bus-alt"></i>
+            <h2>CityTrack</h2>
+<p>Nashik's Real-Time Transport Dashboard</p>
+<p style="font-size: 12px; color: #8899bb; margin-top: 4px;">Sign in to your account</p>
+        </div>
+        <div class="login-form">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="Enter your email" />
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password" />
+            <label>Role</label>
+            <select id="loginRole">
+                <option value="Citizen">Citizen</option>
+                <option value="Authority">Authority</option>
+                <option value="Municipal">Municipal</option>
+            </select>
+            <button onclick="handleLogin()">Sign In</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================= APP ========================= -->
+<div id="dashboardMain" class="app-wrapper" style="display:none;">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon"><i class="fas fa-bus-alt"></i></div>
+            <div class="brand-text">
+                <h2>CityTrack</h2>
+                <span>Smart Transport · Nashik</span>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <div class="nav-group">MAIN</div>
+            <button class="nav-btn active" data-page="dashboard">
+                <i class="fas fa-th-large"></i> Dashboard
+                <span class="badge green">Live</span>
+            </button>
+            <button class="nav-btn" data-page="map">
+                <i class="fas fa-map-marked-alt"></i> Live Map
+            </button>
+
+            <div class="nav-group">TRANSPORT</div>
+            <button class="nav-btn" data-page="vehicles">
+                <i class="fas fa-bus"></i> Vehicles
+                <span class="badge" id="vehCountBadge">110</span>
+            </button>
+            <button class="nav-btn" data-page="routes">
+                <i class="fas fa-route"></i> Routes
+            </button>
+            <button class="nav-btn" data-page="delays">
+                <i class="fas fa-clock"></i> Delays
+                <span class="badge red" id="delayBadge">5</span>
+            </button>
+
+            <div class="nav-group">INFORMATION</div>
+            <button class="nav-btn" data-page="alerts">
+                <i class="fas fa-bell"></i> Alerts
+                <span class="badge red" id="alertBadge">5</span>
+            </button>
+
+            <div class="nav-group">SYSTEM</div>
+            <button class="nav-btn" data-page="analytics">
+                <i class="fas fa-chart-line"></i> Analytics
+            </button>
+            <button class="nav-btn" data-page="settings">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="profile">
+                <div class="profile-avatar"><i class="fas fa-user"></i></div>
+                <div class="profile-info">
+                    <strong id="profileName">Demo User</strong>
+                    <span id="profileRole">Citizen</span>
+                </div>
+            </div>
+            <button class="signout-btn" onclick="handleSignOut()">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </button>
+        </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main">
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="globalSearch" placeholder="Search vehicle, route, or train..." />
+            </div>
+
+            <div class="topbar-right">
+                <button class="icon-btn" title="Notifications" onclick="goToAlerts()">
+                    <i class="fas fa-bell"></i>
+                    <span class="dot"></span>
+                </button>
+
+                <div class="role-switch" id="roleSwitch">
+                    <i class="fas fa-user"></i>
+                    <span id="currentRole">Citizen</span>
+                    <i class="fas fa-chevron-down"></i>
+                    <div class="role-menu" id="roleMenu">
+                        <div onclick="switchRole('Citizen')">Citizen</div>
+                        <div onclick="switchRole('Authority')">Authority</div>
+                        <div onclick="switchRole('Municipal')">Municipal</div>
+                    </div>
+                </div>
+
+                
+            <div class="clock-box">
+    <div class="clock" id="clockTime">--:--:--</div>
+    <div class="date" id="clockDate">-- --- ----</div>
+</div>
+
+<div class="weather-box" id="weatherBox">
+    <div class="weather-icon" id="weatherIcon">🌤️</div>
+    <div class="weather-info">
+        <div class="weather-temp" id="weatherTemp">--°C</div>
+        <div class="weather-desc" id="weatherDesc">Loading...</div>
+    </div>
+</div>
+
+<button class="icon-btn theme-btn" title="Toggle theme" onclick="toggleTheme()">
+    <i class="fas fa-moon" id="themeIcon"></i>
+</button>
+            </div>
+        </header>
+
+        <!-- ========== PAGE: DASHBOARD ========== -->
+        <section class="page active" id="page-dashboard">
+            <div class="page-head">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Real-time overview of Nashik public transport</p>
+                </div>
+                <div class="live-chip"><span class="pulse"></span> Live</div>
+            </div>
+
+            <div class="kpi-grid" id="kpiGrid"></div>
+
+            <div class="row-2">
+                <div class="card map-card">
+                    <div class="card-head">
+                        <h3>Live Vehicle Map</h3>
+                        <span class="muted">Nashik City</span>
+                    </div>
+                    <div id="dashMap"></div>
+                </div>
+
+                <div class="card alerts-card">
+                    <div class="card-head">
+                        <h3>Recent Activity</h3>
+                        <span class="muted">Auto-updating</span>
+                    </div>
+                    <div id="dashUpdates" class="updates-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== PAGE: LIVE MAP ========== -->
+        <section class="page" id="page-map">
+            <div class="page-head">
+                <div>
+                    <h1>Live Map</h1>
+                    <p>All vehicles across Nashik — real-time positions</p>
+                </div>
+            </div>
+            <div class="card">
+                <div id="fullMap" style="height:600px;border-radius:12px;"></div>
+            </div>
+        </section>
+
+        <!-- ========== PAGE: VEHICLES ========== -->
+        <section class="page" id="page-vehicles">
+            <div class="page-head">
+                <div>
+                    <h1>All Vehicles</h1>
+                    <p>Complete fleet — trains, buses, cabs, autos, ambulances, trucks</p>
+                </div>
+            </div>
+
+            <div class="tabs" id="vehicleTabs"></div>
+
+            <div class="card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Type</th>
+                            <th>Route</th>
+                            <th>Driver</th>
+                            <th>Speed</th>
+                            <th>Status</th>
+                            <th>ETA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehiclesTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ========== PAGE: ROUTES ========== -->
+        <section class="page" id="page-routes">
+            <div class="page-head">
+                <div>
+                    <h1>Routes</h1>
+                    <p>All active routes grouped by category</p>
+                </div>
+            </div>
+            <div class="tabs" id="routeTabs"></div>
+            <div class="route-grid" id="routesGrid"></div>
+        </section>
+
+        <!-- ========== PAGE: DELAYS ========== -->
+        <section class="page" id="page-delays">
+            <div class="page-head">
+                <div>
+                    <h1>Delays</h1>
+                    <p>Vehicles currently running behind schedule</p>
+                </div>
+            </div>
+            <div class="card" id="delaysList"></div>
+        </section>
+
+        <!-- ========== PAGE: ALERTS ========== -->
+        <section class="page" id="page-alerts">
+            <div class="page-head">
+                <div>
+                    <h1>Alerts &amp; Notifications</h1>
+                    <p>Real-time transport alerts for Nashik</p>
+                </div>
+                <button class="btn-secondary" onclick="markAllRead()">
+                    <i class="fas fa-check"></i> Mark all read
+                </button>
+            </div>
+            <div class="alert-filters">
+                <button class="chip active" onclick="filterAlerts('all', this)">All</button>
+                <button class="chip" onclick="filterAlerts('critical', this)">Critical</button>
+                <button class="chip" onclick="filterAlerts('warning', this)">Warning</button>
+                <button class="chip" onclick="filterAlerts('info', this)">Info</button>
+            </div>
+            <div class="alerts-list" id="alertsPageList"></div>
+        </section>
+
+        <!-- ========== PAGE: ANALYTICS ========== -->
+        <section class="page" id="page-analytics">
+            <div class="page-head">
+                <div>
+                    <h1>Analytics</h1>
+                    <p>Fleet performance insights — Nashik</p>
+                </div>
+            </div>
+            <div class="analytics-grid">
+                <div class="card"><h4>Status Distribution</h4><canvas id="chartStatus"></canvas></div>
+                <div class="card"><h4>Vehicle Type Distribution</h4><canvas id="chartType"></canvas></div>
+                <div class="card"><h4>Speed Distribution</h4><canvas id="chartSpeed"></canvas></div>
+                <div class="card"><h4>Performance Metrics</h4><canvas id="chartPerf"></canvas></div>
+            </div>
+        </section>
+
+        <!-- ========== PAGE: SETTINGS ========== -->
+        <section class="page" id="page-settings">
+            <div class="page-head">
+                <div>
+                    <h1>Settings</h1>
+                    <p>Preferences for your CityTrack account</p>
+                </div>
+            </div>
+
+            <div class="card settings-card">
+                <div class="setting-row">
+                    <div>
+                        <strong>Dark Mode</strong>
+                        <p>Switch between light and dark theme</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleTheme()" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <strong>Notifications</strong>
+                        <p>Receive alerts for delays and emergencies</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="notifToggle" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <strong>Auto Refresh</strong>
+                        <p>Update vehicle positions automatically</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="refreshToggle" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <strong>Refresh Interval</strong>
+                        <p>How often data updates</p>
+                    </div>
+                    <select class="select-input" id="refreshInterval">
+                        <option value="3">3 seconds</option>
+                        <option value="5">5 seconds</option>
+                        <option value="10">10 seconds</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- ========================= MODAL ========================= -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<!-- Leaflet (map library) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkiRKdyubrqAj1IaIfMP2YroRTN5_cy5k",
+    authDomain: "citytrack-c79e6.firebaseapp.com",
+    projectId: "citytrack-c79e6",
+    storageBucket: "citytrack-c79e6.firebasestorage.app",
+    messagingSenderId: "205545797214",
+    appId: "1:205545797214:web:6311201eda6b165335a6cf"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  window.firebaseAuth = auth;
+  window.firebaseDB = db;
+  window.firebaseFns = {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    collection,
+    addDoc,
+    getDocs,
+    deleteDoc,
+    doc,
+    updateDoc,
+    query,
+    orderBy,
+    serverTimestamp
+  };
+
+  console.log('Firebase initialized successfully');
+</script>
+
+<!-- Main script -->
+<script src="script.js"></script>
+</body>
+</html>
