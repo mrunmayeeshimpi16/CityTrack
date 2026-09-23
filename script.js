@@ -367,6 +367,13 @@ function makeVehicles() {
             capacity: 3,
         });
     }
+        // Add driver ratings to all vehicles
+    vehicles.forEach(v => {
+        v.rating = (4.5 + Math.random() * 0.5).toFixed(1);
+        v.experience = Math.floor(3 + Math.random() * 12);
+        v.trips = Math.floor(100 + Math.random() * 400);
+    });
+
 
     return vehicles;
 }
@@ -873,12 +880,16 @@ function openModal(vehicleId) {
     const v = VEHICLES.find(x => x.id === vehicleId);
     if (!v) return;
 
-    let html = `
+       let html = `
         <h2>${v.icon} ${v.id}</h2>
         <p class="subtitle">${v.route} · ${v.type.toUpperCase()}</p>
 
         <div class="detail-row"><span class="label">Vehicle Number</span><span class="value">${v.number || 'N/A'}</span></div>
         <div class="detail-row"><span class="label">Driver</span><span class="value">${v.driver}</span></div>
+        ${v.rating ? `<div class="detail-row"><span class="label">⭐ Rating</span><span class="value">${v.rating} / 5</span></div>` : ''}
+        ${v.experience ? `<div class="detail-row"><span class="label">📅 Experience</span><span class="value">${v.experience} years</span></div>` : ''}
+        ${v.trips ? `<div class="detail-row"><span class="label">🚗 Total Trips</span><span class="value">${v.trips}</span></div>` : ''}
+        ${v.rating ? `<div class="detail-row"><span class="label">✅ Verified</span><span class="value">Yes</span></div>` : ''}
         ${v.cabType ? `<div class="detail-row"><span class="label">Cab Type</span><span class="value">${v.cabType}</span></div>` : ''}
         <div class="detail-row"><span class="label">Current Speed</span><span class="value">${v.speed} km/h</span></div>
         <div class="detail-row"><span class="label">Status</span><span class="value">${statusLabel(v.status)}</span></div>
